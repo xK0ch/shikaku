@@ -23,11 +23,11 @@ The application ships as a static bundle (HTML, JS glue, `.wasm`) and can be hos
 
 - Rust stable (1.95 or newer)
 - The WebAssembly target:
-  ```
+  ```bash
   rustup target add wasm32-unknown-unknown
   ```
 - Trunk:
-  ```
+  ```bash
   cargo install --locked trunk
   ```
 
@@ -35,7 +35,7 @@ The application ships as a static bundle (HTML, JS glue, `.wasm`) and can be hos
 
 From the project root:
 
-```
+```bash
 trunk serve
 ```
 
@@ -43,7 +43,7 @@ Then open `http://localhost:8080` in your browser. Trunk watches the source file
 
 ## Building for production
 
-```
+```bash
 trunk build --release
 ```
 

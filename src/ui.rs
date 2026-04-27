@@ -48,10 +48,20 @@ pub fn Board(
 
     let board_style = move || {
         puzzle.with(|p| {
+            let cell_size_px = match p.rows.max(p.cols) {
+                0..=5 => 56,
+                6..=10 => 40,
+                11..=20 => 28,
+                21..=30 => 20,
+                _ => 16,
+            };
             format!(
-                "grid-template-columns: repeat({}, var(--cell-size)); \
-                 grid-template-rows: repeat({}, var(--cell-size));",
-                p.cols, p.rows
+                "--cell-size: {cell}px; \
+                 grid-template-columns: repeat({c}, var(--cell-size)); \
+                 grid-template-rows: repeat({r}, var(--cell-size));",
+                cell = cell_size_px,
+                c = p.cols,
+                r = p.rows,
             )
         })
     };

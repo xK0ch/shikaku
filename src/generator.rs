@@ -4,12 +4,10 @@ use rand::Rng;
 use crate::game::{Clue, Coord, Puzzle, Rect};
 use crate::solver::{solve, SolveResult};
 
-const MIN_RECT_AREA: usize = 2;
-
-pub fn generate(rows: usize, cols: usize, attempts: usize) -> Option<Puzzle> {
+pub fn generate(rows: usize, cols: usize, min_rect_area: usize, attempts: usize) -> Option<Puzzle> {
     let mut rng = rand::thread_rng();
     for _ in 0..attempts {
-        let rects = random_tiling(rows, cols, &mut rng);
+        let rects = random_tiling(rows, cols, min_rect_area, &mut rng);
         let clues = clues_from_tiling(&rects, &mut rng);
         let puzzle = Puzzle { rows, cols, clues };
         if matches!(solve(&puzzle), SolveResult::Unique(_)) {
@@ -19,7 +17,7 @@ pub fn generate(rows: usize, cols: usize, attempts: usize) -> Option<Puzzle> {
     None
 }
 
-fn random_tiling<R: Rng>(rows: usize, cols: usize, rng: &mut R) -> Vec<Rect> {
+fn random_tiling<R: Rng>(rows: usize, cols: usize, min_rect_area: usize, rng: &mut R) -> Vec<Rect> {
     let mut covered = vec![false; rows * cols];
     let mut rects = Vec::new();
 
@@ -45,7 +43,7 @@ fn random_tiling<R: Rng>(rows: usize, cols: usize, rng: &mut R) -> Vec<Rect> {
             max_h_per_w[w] = h;
         }
 
-        let (w, h) = pick_size(max_w, &max_h_per_w, rng);
+        let (w, h) = pick_size(max_w, &max_h_per_w, min_rect_area, rng);
 
         let rect = Rect::new(cr, cc, cr + h - 1, cc + w - 1);
         for r in rect.row_start..=rect.row_end {
@@ -58,11 +56,16 @@ fn random_tiling<R: Rng>(rows: usize, cols: usize, rng: &mut R) -> Vec<Rect> {
     rects
 }
 
-fn pick_size<R: Rng>(max_w: usize, max_h_per_w: &[usize], rng: &mut R) -> (usize, usize) {
+fn pick_size<R: Rng>(
+    max_w: usize,
+    max_h_per_w: &[usize],
+    min_rect_area: usize,
+    rng: &mut R,
+) -> (usize, usize) {
     let mut feasible: Vec<(usize, usize)> = Vec::new();
     for w in 1..=max_w {
         for h in 1..=max_h_per_w[w] {
-            if w * h >= MIN_RECT_AREA {
+            if w * h >= min_rect_area {
                 feasible.push((w, h));
             }
         }
@@ -96,7 +99,7 @@ mod tests {
 
     #[test]
     fn generated_puzzle_has_unique_solution() {
-        let p = generate(5, 5, 500).expect("generator should succeed for 5x5");
+        let p = generate(5, 5, 2, 500).expect("generator should succeed for 5x5");
         assert_eq!(p.rows, 5);
         assert_eq!(p.cols, 5);
         let clue_sum: usize = p.clues.iter().map(|c| c.value).sum();
@@ -106,7 +109,7 @@ mod tests {
 
     #[test]
     fn generated_clues_are_within_grid() {
-        let p = generate(6, 6, 500).expect("generator should succeed for 6x6");
+        let p = generate(6, 6, 2, 500).expect("generator should succeed for 6x6");
         for clue in &p.clues {
             assert!(clue.at.0 < p.rows);
             assert!(clue.at.1 < p.cols);
@@ -117,7 +120,7 @@ mod tests {
     #[test]
     fn random_tiling_covers_grid_exactly() {
         let mut rng = rand::thread_rng();
-        let rects = random_tiling(5, 5, &mut rng);
+        let rects = random_tiling(5, 5, 2, &mut rng);
         let mut covered = vec![0u32; 25];
         for r in &rects {
             for row in r.row_start..=r.row_end {
