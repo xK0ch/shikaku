@@ -85,6 +85,15 @@ fn App() -> impl IntoView {
         <main>
             <h1>"Shikaku"</h1>
 
+            <section class="rules">
+                <h2>"Regeln"</h2>
+                <ol>
+                    <li>"Jedes Rechteck enthält genau eine Zahl."</li>
+                    <li>"Die Fläche des Rechtecks entspricht dieser Zahl."</li>
+                    <li>"Rechtecke überlappen nicht und decken das ganze Brett ab."</li>
+                </ol>
+            </section>
+
             <div class="controls">
                 <label class="size-picker">
                     "Größe: "
