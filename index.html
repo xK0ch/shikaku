@@ -56,6 +56,30 @@
             font-weight: 500;
             user-select: none;
             margin: 1px;
+            cursor: crosshair;
+            transition: background 80ms ease-out;
+        }
+
+        .status {
+            min-height: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            color: #b3261e;
+        }
+
+        button.reset {
+            font: inherit;
+            padding: 0.5rem 1.25rem;
+            border: 1px solid var(--grid-border);
+            background: var(--cell-bg);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button.reset:hover {
+            background: #f0f0f0;
         }
     </style>
 </head>
