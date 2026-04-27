@@ -4,24 +4,22 @@ use crate::game::{Coord, PlacementError, Puzzle, Rect};
 
 const PALETTE: &[&str] = &[
     "#fde2e2", "#dceefb", "#e2f5d8", "#fff1c2", "#ead4f5", "#d3f0ee", "#ffd9bd", "#e9e4d4",
+    "#f5c6c6", "#c9e2ff", "#d4f0c2", "#fce5b3",
 ];
 
 #[component]
-pub fn Board(puzzle: Puzzle) -> impl IntoView {
-    let rows = puzzle.rows;
-    let cols = puzzle.cols;
-
-    let placed: RwSignal<Vec<Rect>> = RwSignal::new(vec![]);
-    let drag_start: RwSignal<Option<Coord>> = RwSignal::new(None);
-    let drag_end: RwSignal<Option<Coord>> = RwSignal::new(None);
-    let message: RwSignal<Option<String>> = RwSignal::new(None);
-
+pub fn Board(
+    puzzle: RwSignal<Puzzle>,
+    placed: RwSignal<Vec<Rect>>,
+    drag_start: RwSignal<Option<Coord>>,
+    drag_end: RwSignal<Option<Coord>>,
+    message: RwSignal<Option<String>>,
+) -> impl IntoView {
     let pending_rect = move || match (drag_start.get(), drag_end.get()) {
         (Some(s), Some(e)) => Some(Rect::new(s.0, s.1, e.0, e.1)),
         _ => None,
     };
 
-    let puzzle_for_commit = puzzle.clone();
     let commit_drag = move || {
         let Some(rect) = pending_rect() else {
             return;
@@ -30,7 +28,8 @@ pub fn Board(puzzle: Puzzle) -> impl IntoView {
         if overlaps_existing {
             message.set(Some("Überlappt mit einem bereits platzierten Rechteck.".into()));
         } else {
-            match puzzle_for_commit.validate_placement(&rect) {
+            let result = puzzle.with(|p| p.validate_placement(&rect));
+            match result {
                 Ok(_) => {
                     placed.update(|ps| ps.push(rect));
                     message.set(None);
@@ -47,76 +46,82 @@ pub fn Board(puzzle: Puzzle) -> impl IntoView {
         drag_end.set(None);
     };
 
-    let clues = puzzle.clues.clone();
-    let cells: Vec<_> = (0..rows)
-        .flat_map(|r| {
-            let clues = clues.clone();
-            (0..cols).map(move |c| {
-                let coord = (r, c);
-                let value = clues.iter().find(|cl| cl.at == coord).map(|cl| cl.value);
-
-                let style = move || {
-                    if let Some(idx) = placed.with(|ps| ps.iter().position(|rect| rect.contains(coord))) {
-                        return format!("background:{};", PALETTE[idx % PALETTE.len()]);
-                    }
-                    if let Some(p) = pending_rect() {
-                        if p.contains(coord) {
-                            return "background:rgba(110,170,240,0.35);".to_string();
-                        }
-                    }
-                    String::new()
-                };
-
-                view! {
-                    <div
-                        class="cell"
-                        style=style
-                        on:mousedown=move |_| {
-                            drag_start.set(Some(coord));
-                            drag_end.set(Some(coord));
-                            message.set(None);
-                        }
-                        on:mouseenter=move |_| {
-                            if drag_start.get().is_some() {
-                                drag_end.set(Some(coord));
-                            }
-                        }
-                    >
-                        {value.map(|v| v.to_string())}
-                    </div>
-                }
-            })
+    let board_style = move || {
+        puzzle.with(|p| {
+            format!(
+                "grid-template-columns: repeat({}, var(--cell-size)); \
+                 grid-template-rows: repeat({}, var(--cell-size));",
+                p.cols, p.rows
+            )
         })
-        .collect();
-
-    let grid_style = format!(
-        "grid-template-columns: repeat({cols}, var(--cell-size)); \
-         grid-template-rows: repeat({rows}, var(--cell-size));"
-    );
+    };
 
     view! {
         <div
             class="board"
-            style={grid_style}
+            style=board_style
             on:mouseup=move |_| commit_drag()
             on:mouseleave=move |_| cancel_drag()
         >
-            {cells}
-        </div>
+            {move || {
+                let p = puzzle.get();
+                let rows = p.rows;
+                let cols = p.cols;
+                let clues = p.clues;
 
-        <div class="status">
-            {move || message.get().map(|m| view! { <span class="error">{m}</span> })}
-        </div>
+                (0..rows)
+                    .flat_map(|r| {
+                        let clues = clues.clone();
+                        (0..cols).map(move |c| {
+                            let coord = (r, c);
+                            let value = clues.iter().find(|cl| cl.at == coord).map(|cl| cl.value);
 
-        <button
-            class="reset"
-            on:click=move |_| {
-                placed.set(vec![]);
-                message.set(None);
-            }
-        >
-            "Reset"
-        </button>
+                            let style = move || {
+                                if let Some(idx) = placed
+                                    .with(|ps| ps.iter().position(|rect| rect.contains(coord)))
+                                {
+                                    return format!("background:{};", PALETTE[idx % PALETTE.len()]);
+                                }
+                                if let Some(p) = pending_rect() {
+                                    if p.contains(coord) {
+                                        return "background:rgba(110,170,240,0.35);".to_string();
+                                    }
+                                }
+                                String::new()
+                            };
+
+                            view! {
+                                <div
+                                    class="cell"
+                                    style=style
+                                    on:mousedown=move |_| {
+                                        let hit = placed
+                                            .with(|ps| ps.iter().position(|r| r.contains(coord)));
+                                        if let Some(idx) = hit {
+                                            placed.update(|ps| {
+                                                ps.remove(idx);
+                                            });
+                                            message.set(None);
+                                            return;
+                                        }
+                                        drag_start.set(Some(coord));
+                                        drag_end.set(Some(coord));
+                                        message.set(None);
+                                    }
+                                    on:mouseenter=move |_| {
+                                        if drag_start.get().is_some() {
+                                            drag_end.set(Some(coord));
+                                        }
+                                    }
+                                >
+                                    {value.map(|v| v.to_string())}
+                                </div>
+                            }
+                        })
+                    })
+                    .collect_view()
+            }}
+        </div>
     }
 }
 
