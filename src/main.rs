@@ -99,20 +99,21 @@ fn App() -> impl IntoView {
 
     view! {
         <main>
-            <h1>"Shikaku"</h1>
+            <header class="masthead">
+                <span class="kanji" aria-hidden="true">"四角"</span>
+                <h1>"Shikaku"</h1>
+                <p class="tagline">
+                    "Japanisches Logikrätsel"
+                    <span class="dot" aria-hidden="true"></span>
+                    "Rust"
+                    <span class="dot" aria-hidden="true"></span>
+                    "WebAssembly"
+                </p>
+            </header>
 
-            <section class="rules">
-                <h2>"Regeln"</h2>
-                <ol>
-                    <li>"Jedes Rechteck enthält genau eine Zahl."</li>
-                    <li>"Die Fläche des Rechtecks entspricht dieser Zahl."</li>
-                    <li>"Rechtecke überlappen nicht und decken das ganze Brett ab."</li>
-                </ol>
-            </section>
-
-            <div class="controls">
+            <div class="toolbar">
                 <label class="size-picker">
-                    "Größe: "
+                    "Größe"
                     <select on:change=on_size_change>
                         {SIZE_OPTIONS.iter().map(|&s| {
                             view! {
@@ -126,30 +127,42 @@ fn App() -> impl IntoView {
                         }).collect_view()}
                     </select>
                 </label>
+                <div class="actions">
+                    <button class="btn" on:click=new_puzzle>"Neues Puzzle"</button>
+                    <button class="btn" on:click=reset>"Reset"</button>
+                </div>
             </div>
 
-            <Board
-                puzzle=puzzle
-                placed=placed
-                drag_start=drag_start
-                drag_end=drag_end
-                message=message
-            />
+            <div class="board-stage">
+                <div class="board-frame">
+                    <Board
+                        puzzle=puzzle
+                        placed=placed
+                        drag_start=drag_start
+                        drag_end=drag_end
+                        message=message
+                    />
+                </div>
+            </div>
 
             <div class="status">
                 {move || {
                     if solved() {
-                        Some(view! { <span class="success">"Gelöst!"</span> }.into_any())
+                        Some(view! { <span class="success">"Gelöst"</span> }.into_any())
                     } else {
                         message.get().map(|m| view! { <span class="error">{m}</span> }.into_any())
                     }
                 }}
             </div>
 
-            <div class="actions">
-                <button class="btn" on:click=new_puzzle>"Neues Puzzle"</button>
-                <button class="btn" on:click=reset>"Reset"</button>
-            </div>
+            <section class="rules">
+                <h2>"Regeln"</h2>
+                <ol>
+                    <li>"Jedes Rechteck enthält genau eine Zahl."</li>
+                    <li>"Die Fläche des Rechtecks entspricht dieser Zahl."</li>
+                    <li>"Rechtecke überlappen nicht und decken das ganze Brett ab."</li>
+                </ol>
+            </section>
         </main>
     }
 }

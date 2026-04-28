@@ -3,8 +3,9 @@ use leptos::prelude::*;
 use crate::game::{Coord, PlacementError, Puzzle, Rect};
 
 const PALETTE: &[&str] = &[
-    "#fde2e2", "#dceefb", "#e2f5d8", "#fff1c2", "#ead4f5", "#d3f0ee", "#ffd9bd", "#e9e4d4",
-    "#f5c6c6", "#c9e2ff", "#d4f0c2", "#fce5b3",
+    "#d4a574", "#b8c9a8", "#dcc9b8", "#a8b8c4",
+    "#c8b8c4", "#d4b890", "#b8a888", "#9eb8b0",
+    "#caa498", "#b0a4b8", "#a8c0a4", "#dabb84",
 ];
 
 #[component]
@@ -94,7 +95,12 @@ pub fn Board(
                                 }
                                 if let Some(p) = pending_rect() {
                                     if p.contains(coord) {
-                                        return "background:rgba(110,170,240,0.35);".to_string();
+                                        let cr = (p.row_start + p.row_end) / 2;
+                                        let cc = (p.col_start + p.col_end) / 2;
+                                        if coord == (cr, cc) {
+                                            return "background:rgba(200,65,42,0.32);color:#9c2f1c;".to_string();
+                                        }
+                                        return "background:rgba(200,65,42,0.16);".to_string();
                                     }
                                 }
                                 String::new()
