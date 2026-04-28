@@ -1,5 +1,12 @@
 use crate::game::{Clue, Puzzle, Rect};
 
+/// Default node budget for [`solve`]. Picked so that even the worst case on a
+/// 40x40 board stays in the low hundreds of milliseconds. If a search exceeds
+/// the budget without confirming uniqueness, the puzzle is reported as
+/// [`SolveResult::Multiple`] (a conservative classification: the generator
+/// will simply discard the candidate and try another tiling).
+pub const DEFAULT_MAX_NODES: usize = 100_000;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum SolveResult {
     None,
@@ -8,6 +15,10 @@ pub enum SolveResult {
 }
 
 pub fn solve(puzzle: &Puzzle) -> SolveResult {
+    solve_with_budget(puzzle, DEFAULT_MAX_NODES)
+}
+
+pub fn solve_with_budget(puzzle: &Puzzle, max_nodes: usize) -> SolveResult {
     let total_cells = puzzle.rows * puzzle.cols;
     let clue_sum: usize = puzzle.clues.iter().map(|c| c.value).sum();
     if clue_sum != total_cells {
@@ -30,6 +41,8 @@ pub fn solve(puzzle: &Puzzle) -> SolveResult {
     let mut covered = vec![false; total_cells];
     let mut first_solution: Option<Vec<Rect>> = None;
     let mut solutions_found: usize = 0;
+    let mut nodes: usize = 0;
+    let mut budget_exhausted = false;
 
     backtrack(
         0,
@@ -39,7 +52,14 @@ pub fn solve(puzzle: &Puzzle) -> SolveResult {
         &mut covered,
         &mut first_solution,
         &mut solutions_found,
+        &mut nodes,
+        max_nodes,
+        &mut budget_exhausted,
     );
+
+    if budget_exhausted && solutions_found < 2 {
+        return SolveResult::Multiple;
+    }
 
     match (solutions_found, first_solution) {
         (0, _) => SolveResult::None,
@@ -56,8 +76,16 @@ fn backtrack(
     covered: &mut [bool],
     first_solution: &mut Option<Vec<Rect>>,
     solutions_found: &mut usize,
+    nodes: &mut usize,
+    max_nodes: usize,
+    budget_exhausted: &mut bool,
 ) -> bool {
-    if *solutions_found >= 2 {
+    if *budget_exhausted || *solutions_found >= 2 {
+        return true;
+    }
+    *nodes += 1;
+    if *nodes > max_nodes {
+        *budget_exhausted = true;
         return true;
     }
     if idx == clue_options.len() {
@@ -75,7 +103,18 @@ fn backtrack(
         }
         mark(rect, cols, covered, true);
         placed.push(*rect);
-        let stop = backtrack(idx + 1, clue_options, cols, placed, covered, first_solution, solutions_found);
+        let stop = backtrack(
+            idx + 1,
+            clue_options,
+            cols,
+            placed,
+            covered,
+            first_solution,
+            solutions_found,
+            nodes,
+            max_nodes,
+            budget_exhausted,
+        );
         placed.pop();
         mark(rect, cols, covered, false);
         if stop {

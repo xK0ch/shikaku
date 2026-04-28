@@ -27,17 +27,21 @@ fn fallback_puzzle() -> Puzzle {
 
 fn generator_params(size: usize) -> (usize, usize) {
     match size {
-        0..=5 => (2, 500),
-        6..=10 => (3, 1000),
-        11..=20 => (5, 1500),
-        21..=30 => (7, 2000),
-        _ => (9, 3000),
+        0..=5 => (2, 10000),
+        6..=10 => (3, 20000),
+        11..=20 => (5, 30000),
+        21..=30 => (7, 40000),
+        _ => (9, 50000),
     }
 }
 
-fn fresh_puzzle(size: usize) -> Puzzle {
+fn try_fresh_puzzle(size: usize) -> Option<Puzzle> {
     let (min_area, attempts) = generator_params(size);
-    generate(size, size, min_area, attempts).unwrap_or_else(fallback_puzzle)
+    generate(size, size, min_area, attempts)
+}
+
+fn fresh_puzzle(size: usize) -> Puzzle {
+    try_fresh_puzzle(size).unwrap_or_else(fallback_puzzle)
 }
 
 #[component]
@@ -62,9 +66,22 @@ fn App() -> impl IntoView {
         message.set(None);
     };
 
+    let load_puzzle = move |size: usize| {
+        match try_fresh_puzzle(size) {
+            Some(p) => {
+                puzzle.set(p);
+                reset_state();
+            }
+            None => {
+                message.set(Some(format!(
+                    "Konnte kein {size}\u{00d7}{size}-Puzzle generieren. Bitte erneut versuchen oder eine andere Größe wählen."
+                )));
+            }
+        }
+    };
+
     let new_puzzle = move |_| {
-        puzzle.set(fresh_puzzle(current_size.get()));
-        reset_state();
+        load_puzzle(current_size.get());
     };
 
     let reset = move |_| {
@@ -77,8 +94,7 @@ fn App() -> impl IntoView {
             return;
         }
         current_size.set(size);
-        puzzle.set(fresh_puzzle(size));
-        reset_state();
+        load_puzzle(size);
     };
 
     view! {

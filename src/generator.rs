@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use crate::game::{Clue, Coord, Puzzle, Rect};
+use crate::game::{Clue, Puzzle, Rect};
 use crate::solver::{solve, SolveResult};
 
 pub fn generate(rows: usize, cols: usize, min_rect_area: usize, attempts: usize) -> Option<Puzzle> {
@@ -80,10 +80,18 @@ fn clues_from_tiling<R: Rng>(rects: &[Rect], rng: &mut R) -> Vec<Clue> {
     rects
         .iter()
         .map(|r| {
-            let cells: Vec<Coord> = (r.row_start..=r.row_end)
-                .flat_map(|row| (r.col_start..=r.col_end).map(move |c| (row, c)))
-                .collect();
-            let chosen = *cells.choose(rng).unwrap();
+            // Place clues in one of the rectangle's four corners. Corner
+            // positions are the most constraining placements because they
+            // anchor one corner of the rectangle, which makes the resulting
+            // puzzles uniquely solvable far more often than placing the
+            // clue in the rectangle's interior.
+            let corners = [
+                (r.row_start, r.col_start),
+                (r.row_start, r.col_end),
+                (r.row_end, r.col_start),
+                (r.row_end, r.col_end),
+            ];
+            let chosen = *corners.choose(rng).unwrap();
             Clue {
                 at: chosen,
                 value: r.area(),
@@ -114,6 +122,19 @@ mod tests {
             assert!(clue.at.0 < p.rows);
             assert!(clue.at.1 < p.cols);
             assert!(clue.value >= 1);
+        }
+    }
+
+    #[test]
+    fn clues_are_placed_in_rectangle_corners() {
+        let mut rng = rand::thread_rng();
+        let rects = random_tiling(8, 8, 2, &mut rng);
+        let clues = clues_from_tiling(&rects, &mut rng);
+        for (clue, rect) in clues.iter().zip(rects.iter()) {
+            let (r, c) = clue.at;
+            let on_corner = (r == rect.row_start || r == rect.row_end)
+                && (c == rect.col_start || c == rect.col_end);
+            assert!(on_corner, "clue {:?} not at corner of {:?}", clue.at, rect);
         }
     }
 

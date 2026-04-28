@@ -100,6 +100,19 @@ pub fn Board(
                                 String::new()
                             };
 
+                            let content = move || {
+                                if let Some(rect) = pending_rect() {
+                                    let cr = (rect.row_start + rect.row_end) / 2;
+                                    let cc = (rect.col_start + rect.col_end) / 2;
+                                    if coord == (cr, cc) {
+                                        let h = rect.row_end - rect.row_start + 1;
+                                        let w = rect.col_end - rect.col_start + 1;
+                                        return format!("{h}:{w}");
+                                    }
+                                }
+                                value.map(|v| v.to_string()).unwrap_or_default()
+                            };
+
                             view! {
                                 <div
                                     class="cell"
@@ -124,7 +137,7 @@ pub fn Board(
                                         }
                                     }
                                 >
-                                    {value.map(|v| v.to_string())}
+                                    {content}
                                 </div>
                             }
                         })
