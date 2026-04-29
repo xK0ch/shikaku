@@ -48,7 +48,3 @@ trunk build --release
 ```
 
 The output is written to `dist/` and can be deployed to any static host.
-
-## Status
-
-Early development. Not yet playable.

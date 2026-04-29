@@ -1,0 +1,12 @@
+services:
+  shikaku:
+    build: .
+    container_name: shikaku
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    name: proxy-net
+    external: true
