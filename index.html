@@ -193,6 +193,42 @@
             gap: 0.5rem;
         }
 
+        .lang-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.15rem;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+        }
+
+        .lang-switch button {
+            font: inherit;
+            text-transform: inherit;
+            letter-spacing: inherit;
+            background: transparent;
+            border: none;
+            padding: 0.4rem 0.55rem;
+            color: var(--ink-faint);
+            cursor: pointer;
+            transition: color 150ms;
+        }
+
+        .lang-switch button:hover {
+            color: var(--ink-soft);
+        }
+
+        .lang-switch button.active {
+            color: var(--vermillion);
+            font-weight: 700;
+        }
+
+        .lang-switch button:focus-visible {
+            outline: 2px solid var(--vermillion);
+            outline-offset: 2px;
+        }
+
         button.btn {
             font-family: var(--mono);
             font-size: 0.7rem;

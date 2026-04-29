@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use crate::game::{Coord, PlacementError, Puzzle, Rect};
+use crate::i18n::Lang;
 
 const PALETTE: &[&str] = &[
     "#d4a574", "#b8c9a8", "#dcc9b8", "#a8b8c4",
@@ -16,6 +17,8 @@ pub fn Board(
     drag_end: RwSignal<Option<Coord>>,
     message: RwSignal<Option<String>>,
 ) -> impl IntoView {
+    let lang = use_context::<RwSignal<Lang>>().expect("Lang context must be provided");
+
     let pending_rect = move || match (drag_start.get(), drag_end.get()) {
         (Some(s), Some(e)) => Some(Rect::new(s.0, s.1, e.0, e.1)),
         _ => None,
@@ -25,9 +28,10 @@ pub fn Board(
         let Some(rect) = pending_rect() else {
             return;
         };
+        let texts = lang.get_untracked().texts();
         let overlaps_existing = placed.with(|ps| ps.iter().any(|p| p.overlaps(&rect)));
         if overlaps_existing {
-            message.set(Some("Überlappt mit einem bereits platzierten Rechteck.".into()));
+            message.set(Some(texts.err_overlap.to_string()));
         } else {
             let result = puzzle.with(|p| p.validate_placement(&rect));
             match result {
@@ -35,7 +39,7 @@ pub fn Board(
                     placed.update(|ps| ps.push(rect));
                     message.set(None);
                 }
-                Err(e) => message.set(Some(error_text(e))),
+                Err(e) => message.set(Some(error_text(e, texts).to_string())),
             }
         }
         drag_start.set(None);
@@ -154,13 +158,11 @@ pub fn Board(
     }
 }
 
-fn error_text(e: PlacementError) -> String {
+fn error_text(e: PlacementError, texts: crate::i18n::Texts) -> &'static str {
     match e {
-        PlacementError::OutOfBounds => "Rechteck verlässt das Spielfeld.".into(),
-        PlacementError::NoClue => "Rechteck enthält keine Zahl.".into(),
-        PlacementError::MultipleClues => "Rechteck enthält mehr als eine Zahl.".into(),
-        PlacementError::AreaMismatch { expected, actual } => {
-            format!("Falsche Größe: erwartet {expected} Felder, sind aber {actual}.")
-        }
+        PlacementError::OutOfBounds => texts.err_out_of_bounds,
+        PlacementError::NoClue => texts.err_no_clue,
+        PlacementError::MultipleClues => texts.err_multiple_clues,
+        PlacementError::AreaMismatch { .. } => texts.err_wrong_size,
     }
 }

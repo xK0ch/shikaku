@@ -1,5 +1,6 @@
 mod game;
 mod generator;
+mod i18n;
 mod solver;
 mod ui;
 
@@ -7,6 +8,7 @@ use leptos::prelude::*;
 
 use crate::game::{Clue, Coord, Puzzle, Rect};
 use crate::generator::generate;
+use crate::i18n::Lang;
 use crate::ui::Board;
 
 const SIZE_OPTIONS: &[usize] = &[5, 10, 20, 30, 40];
@@ -46,6 +48,9 @@ fn fresh_puzzle(size: usize) -> Puzzle {
 
 #[component]
 fn App() -> impl IntoView {
+    let lang = RwSignal::new(Lang::De);
+    provide_context(lang);
+
     let current_size = RwSignal::new(DEFAULT_SIZE);
     let puzzle = RwSignal::new(fresh_puzzle(DEFAULT_SIZE));
     let placed = RwSignal::<Vec<Rect>>::new(vec![]);
@@ -73,9 +78,8 @@ fn App() -> impl IntoView {
                 reset_state();
             }
             None => {
-                message.set(Some(format!(
-                    "Konnte kein {size}\u{00d7}{size}-Puzzle generieren. Bitte erneut versuchen oder eine andere Größe wählen."
-                )));
+                let l = lang.get_untracked();
+                message.set(Some(l.cannot_generate(size)));
             }
         }
     };
@@ -97,13 +101,15 @@ fn App() -> impl IntoView {
         load_puzzle(size);
     };
 
+    let t = move || lang.get().texts();
+
     view! {
-        <main>
+        <main lang=move || lang.get().code()>
             <header class="masthead">
                 <span class="kanji" aria-hidden="true">"四角"</span>
                 <h1>"Shikaku"</h1>
                 <p class="tagline">
-                    "Japanisches Logikrätsel"
+                    {move || t().tagline_prefix}
                     <span class="dot" aria-hidden="true"></span>
                     "Rust"
                     <span class="dot" aria-hidden="true"></span>
@@ -113,7 +119,7 @@ fn App() -> impl IntoView {
 
             <div class="toolbar">
                 <label class="size-picker">
-                    "Größe"
+                    {move || t().size_label}
                     <select on:change=on_size_change>
                         {SIZE_OPTIONS.iter().map(|&s| {
                             view! {
@@ -127,9 +133,25 @@ fn App() -> impl IntoView {
                         }).collect_view()}
                     </select>
                 </label>
+                <div class="lang-switch" role="group" aria-label="Language">
+                    <button
+                        type="button"
+                        class:active=move || lang.get() == Lang::De
+                        on:click=move |_| lang.set(Lang::De)
+                    >
+                        "DE"
+                    </button>
+                    <button
+                        type="button"
+                        class:active=move || lang.get() == Lang::En
+                        on:click=move |_| lang.set(Lang::En)
+                    >
+                        "EN"
+                    </button>
+                </div>
                 <div class="actions">
-                    <button class="btn" on:click=new_puzzle>"Neues Puzzle"</button>
-                    <button class="btn" on:click=reset>"Reset"</button>
+                    <button class="btn" on:click=new_puzzle>{move || t().new_puzzle}</button>
+                    <button class="btn" on:click=reset>{move || t().reset}</button>
                 </div>
             </div>
 
@@ -148,7 +170,7 @@ fn App() -> impl IntoView {
             <div class="status">
                 {move || {
                     if solved() {
-                        Some(view! { <span class="success">"Gelöst"</span> }.into_any())
+                        Some(view! { <span class="success">{t().solved}</span> }.into_any())
                     } else {
                         message.get().map(|m| view! { <span class="error">{m}</span> }.into_any())
                     }
@@ -156,11 +178,11 @@ fn App() -> impl IntoView {
             </div>
 
             <section class="rules">
-                <h2>"Regeln"</h2>
+                <h2>{move || t().rules_heading}</h2>
                 <ol>
-                    <li>"Jedes Rechteck enthält genau eine Zahl."</li>
-                    <li>"Die Fläche des Rechtecks entspricht dieser Zahl."</li>
-                    <li>"Rechtecke überlappen nicht und decken das ganze Brett ab."</li>
+                    <li>{move || t().rule_1}</li>
+                    <li>{move || t().rule_2}</li>
+                    <li>{move || t().rule_3}</li>
                 </ol>
             </section>
         </main>
