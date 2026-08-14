@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- paper tile -->
+  <rect width="32" height="32" rx="6" fill="#f1ebdc"/>
+  <!-- one solved clue rectangle in vermillion -->
+  <rect x="18" y="7" width="7" height="9" fill="#c8412a"/>
+  <!-- board frame and rectangle divisions in ink -->
+  <g fill="none" stroke="#1c1812" stroke-width="2" stroke-linecap="square">
+    <rect x="6" y="6" width="20" height="20"/>
+    <line x1="17" y1="6" x2="17" y2="26"/>
+    <line x1="6" y1="16" x2="17" y2="16"/>
+    <line x1="17" y1="17" x2="26" y2="17"/>
+  </g>
+</svg>

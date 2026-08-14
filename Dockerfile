@@ -8,7 +8,7 @@ RUN rustup target add wasm32-unknown-unknown && \
 COPY Cargo.toml Cargo.lock ./
 COPY .cargo ./.cargo
 COPY src ./src
-COPY index.html ./
+COPY index.html favicon.svg ./
 RUN trunk build --release
 
 FROM nginx:1.31.1-alpine
