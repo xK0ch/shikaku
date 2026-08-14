@@ -1,0 +1,4 @@
+# getrandom 0.3+ needs an explicit backend for wasm32-unknown-unknown.
+# This selects the browser (wasm_js) backend used by the transitive rand dep.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
