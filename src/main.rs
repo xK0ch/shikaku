@@ -7,7 +7,7 @@ mod ui;
 use leptos::prelude::*;
 
 use crate::game::{Clue, Coord, Puzzle, Rect};
-use crate::generator::generate;
+use crate::generator::{generate, AreaLimits};
 use crate::i18n::Lang;
 use crate::ui::Board;
 
@@ -27,19 +27,19 @@ fn fallback_puzzle() -> Puzzle {
     }
 }
 
-fn generator_params(size: usize) -> (usize, usize) {
+fn generator_params(size: usize) -> (AreaLimits, usize) {
     match size {
-        0..=5 => (2, 10000),
-        6..=10 => (3, 20000),
-        11..=20 => (5, 30000),
-        21..=30 => (7, 40000),
-        _ => (9, 50000),
+        0..=5 => (AreaLimits { min: 2, max: 8 }, 10000),
+        6..=10 => (AreaLimits { min: 3, max: 15 }, 20000),
+        11..=20 => (AreaLimits { min: 5, max: 18 }, 30000),
+        21..=30 => (AreaLimits { min: 7, max: 20 }, 40000),
+        _ => (AreaLimits { min: 9, max: 24 }, 50000),
     }
 }
 
 fn try_fresh_puzzle(size: usize) -> Option<Puzzle> {
-    let (min_area, attempts) = generator_params(size);
-    generate(size, size, min_area, attempts)
+    let (limits, attempts) = generator_params(size);
+    generate(size, size, limits, attempts)
 }
 
 fn fresh_puzzle(size: usize) -> Puzzle {

@@ -41,6 +41,27 @@ trunk serve
 
 Then open `http://localhost:8080` in your browser. Trunk watches the source files and rebuilds on every change.
 
+## Playing
+
+Drag across the board with the mouse or a finger to draw a rectangle, tap or click a placed
+rectangle to remove it. Pointer events handle mouse, touch and pen the same way, so the game works
+on phones and tablets.
+
+## Puzzle generator
+
+The generator tiles the board with random rectangles and keeps the tiling only if the solver finds
+exactly one solution. For each rectangle it first picks an area within the limits of the board size
+(for example 3 to 15 on 10 x 10), slightly favouring smaller areas, and then a shape with that area.
+This gives a mix of small, medium and a few large numbers instead of a handful of huge rectangles.
+
+## Tests
+
+```bash
+cargo test
+```
+
+The Docker build runs the tests before the release build, so a failing test stops the deployment.
+
 ## Building for production
 
 ```bash

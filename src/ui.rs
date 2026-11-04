@@ -51,6 +51,47 @@ pub fn Board(
         drag_end.set(None);
     };
 
+    let board_ref = NodeRef::<leptos::html::Div>::new();
+
+    let cell_at = move |client_x: f64, client_y: f64| -> Option<Coord> {
+        let board = board_ref.get_untracked()?;
+        let (rows, cols) = puzzle.with_untracked(|p| (p.rows, p.cols));
+        let inner_width = f64::from(board.client_width());
+        let inner_height = f64::from(board.client_height());
+        if rows == 0 || cols == 0 || inner_width <= 0.0 || inner_height <= 0.0 {
+            return None;
+        }
+        let bounds = board.get_bounding_client_rect();
+        let x = client_x - bounds.left() - f64::from(board.client_left());
+        let y = client_y - bounds.top() - f64::from(board.client_top());
+        let index_within = |offset: f64, extent: f64, count: usize| {
+            let index = (offset / extent * count as f64).floor();
+            index.clamp(0.0, (count - 1) as f64) as usize
+        };
+        Some((index_within(y, inner_height, rows), index_within(x, inner_width, cols)))
+    };
+
+    let start_drag_or_remove = move |coord: Coord| {
+        let hit = placed.with(|ps| ps.iter().position(|r| r.contains(coord)));
+        if let Some(idx) = hit {
+            placed.update(|ps| {
+                ps.remove(idx);
+            });
+            message.set(None);
+            return false;
+        }
+        drag_start.set(Some(coord));
+        drag_end.set(Some(coord));
+        message.set(None);
+        true
+    };
+
+    let extend_drag = move |coord: Coord| {
+        if drag_start.get_untracked().is_some() && drag_end.get_untracked() != Some(coord) {
+            drag_end.set(Some(coord));
+        }
+    };
+
     let board_style = move || {
         puzzle.with(|p| {
             let cell_size_px = match p.rows.max(p.cols) {
@@ -61,7 +102,7 @@ pub fn Board(
                 _ => 16,
             };
             format!(
-                "--cell-size: {cell}px; \
+                "--cell-size: min({cell}px, calc((100vw - 5rem) / {c})); \
                  grid-template-columns: repeat({c}, var(--cell-size)); \
                  grid-template-rows: repeat({r}, var(--cell-size));",
                 cell = cell_size_px,
@@ -75,8 +116,28 @@ pub fn Board(
         <div
             class="board"
             style=board_style
-            on:mouseup=move |_| commit_drag()
-            on:mouseleave=move |_| cancel_drag()
+            node_ref=board_ref
+            on:pointerdown=move |ev: leptos::ev::PointerEvent| {
+                if !ev.is_primary() {
+                    return;
+                }
+                let Some(coord) = cell_at(f64::from(ev.client_x()), f64::from(ev.client_y())) else {
+                    return;
+                };
+                ev.prevent_default();
+                if start_drag_or_remove(coord) {
+                    if let Some(board) = board_ref.get_untracked() {
+                        let _ = board.set_pointer_capture(ev.pointer_id());
+                    }
+                }
+            }
+            on:pointermove=move |ev: leptos::ev::PointerEvent| {
+                if let Some(coord) = cell_at(f64::from(ev.client_x()), f64::from(ev.client_y())) {
+                    extend_drag(coord);
+                }
+            }
+            on:pointerup=move |_| commit_drag()
+            on:pointercancel=move |_| cancel_drag()
         >
             {move || {
                 let p = puzzle.get();
@@ -124,29 +185,7 @@ pub fn Board(
                             };
 
                             view! {
-                                <div
-                                    class="cell"
-                                    style=style
-                                    on:mousedown=move |_| {
-                                        let hit = placed
-                                            .with(|ps| ps.iter().position(|r| r.contains(coord)));
-                                        if let Some(idx) = hit {
-                                            placed.update(|ps| {
-                                                ps.remove(idx);
-                                            });
-                                            message.set(None);
-                                            return;
-                                        }
-                                        drag_start.set(Some(coord));
-                                        drag_end.set(Some(coord));
-                                        message.set(None);
-                                    }
-                                    on:mouseenter=move |_| {
-                                        if drag_start.get().is_some() {
-                                            drag_end.set(Some(coord));
-                                        }
-                                    }
-                                >
+                                <div class="cell" style=style>
                                     {content}
                                 </div>
                             }
